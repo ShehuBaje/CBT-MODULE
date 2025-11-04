@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  teacher   Teacher?
+  student   Student?
+  createdAt DateTime @default(now())
+}
+
+model Class {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  subjects  Subject[]
+  students  Student[]
+}
+
+model Subject {
+  id        Int        @id @default(autoincrement())
+  name      String
+  classId   Int
+  class     Class      @relation(fields: [classId], references: [id])
+  exams     Exam[]
+  teachers  TeacherSubject[]
+}
+
+model Teacher {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  user      User       @relation(fields: [userId], references: [id])
+  subjects  TeacherSubject[]
+  exams     Exam[]
+}
+
+model Student {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  classId   Int
+  user      User       @relation(fields: [userId], references: [id])
+  class     Class      @relation(fields: [classId], references: [id])
+  results   Result[]
+}
+
+model TeacherSubject {
+  id         Int      @id @default(autoincrement())
+  teacherId  Int
+  subjectId  Int
+  teacher    Teacher  @relation(fields: [teacherId], references: [id])
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+}
+
+model Exam {
+  id          Int        @id @default(autoincrement())
+  title       String
+  subjectId   Int
+  teacherId   Int
+  duration    Int
+  questions   Question[]
+  results     Result[]
+  subject     Subject    @relation(fields: [subjectId], references: [id])
+  teacher     Teacher    @relation(fields: [teacherId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model Question {
+  id             Int      @id @default(autoincrement())
+  examId         Int
+  questionText   String
+  options        Json
+  correctAnswer  String
+  exam           Exam     @relation(fields: [examId], references: [id])
+}
+
+model Result {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  examId      Int
+  score       Int
+  student     Student  @relation(fields: [studentId], references: [id])
+  exam        Exam     @relation(fields: [examId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
